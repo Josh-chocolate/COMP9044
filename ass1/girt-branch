@@ -1,0 +1,124 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT Mar 23th 2021
+# branch function of girt
+
+
+# define functions
+
+# check if there is commit
+check_error() {
+	current_branch=`cat .girt/.current`
+	commit=`cat .girt/CMTMSG`
+	if [ "$commit" = '' ]
+	then
+		echo "girt-branch: error: this command can not be run until after the first commit" >&2
+		exit 1
+	fi
+
+}
+
+delete_branch() {
+	check_error
+	branch=$1
+	if [ "$branch" = "master" ]
+	then
+		echo "girt-branch: error: can not delete branch 'master'" >&2
+		exit 1
+	elif [ -d .girt/branches/$branch ]
+	then
+	
+		# check if the branch has unmerged changes
+		latest_commit=`ls .girt/branches/$branch | sed 's/ /\n/g' | sort -nr | head -1`
+		current_branch=`cat .girt/.current`
+		current_commit=`ls .girt/branches/$current_branch | sed 's/ /\n/g' | sort -nr | head -1`
+		
+		if [ "$latest_commit" -gt "$current_commit" ]
+		then
+			echo "girt-branch: error: branch '${branch}' has unmerged changes" >&2
+			exit 1
+		fi
+		
+		# if no need to merge then delete
+		rm -rf .girt/branches/$branch
+		echo "Deleted branch '${branch}'"
+		exit 0
+	else
+		echo "girt-branch: error: branch '${branch}' doesn't exist" >&2
+		exit 1
+	fi
+	# TODO: swith to which branch after delete?
+}
+
+display_branches() {
+	check_error
+	ls .girt/branches | sed 's/ /\n/g' | sort
+}
+
+add_new_branch() {
+	check_error
+	new_branch=$1
+	# check the name valid or not
+	expr $new_branch + 1 >/dev/null 2>/dev/null
+	if [ $? -eq 0 ]
+	then
+		echo "girt-branch: error: invalid branch name '${new_branch}'" >&2
+		exit 1
+	fi
+	
+	current_branch=`cat .girt/.current`
+	if [ -d .girt/branches/$new_branch ]
+	then
+		echo "girt-branch: error: branch '${new_branch}' already exists" >&2
+		exit 1
+	else
+		mkdir .girt/branches/$new_branch
+		
+		while read -r line
+		do
+			echo $line >>.girt/branches/$new_branch/.log
+		done <.girt/branches/$current_branch/.log
+		
+		#cat .girt/branches/$new_branch/.log
+		if ! [ "`ls .girt/branches/${current_branch}`" = '' ]
+		then
+			for file in .girt/branches/${current_branch}/*
+			do
+				cp -r $file .girt/branches/$new_branch
+			done
+		fi
+	fi
+}
+
+
+# the main procedure
+
+# check if the repository is there
+if ! [ -d "./.girt" ]
+then
+	echo "girt-branch: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+case $1 in
+-d)
+	if [ $# -ne 2 ]
+	then
+		echo "usage: girt-branch [-d] <branch>"
+		exit 1
+	else
+		delete_branch $2
+	fi
+	;;
+*)
+	if [ $# -eq 0 ]
+	then
+		display_branches
+	elif [ $# -eq 1 ]
+	then
+		add_new_branch $1
+	else
+		echo "usage: girt-branch [-d] <branch>"
+		exit 1
+	fi
+	;;
+esac

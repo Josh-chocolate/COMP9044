@@ -1,0 +1,40 @@
+#!/bin/dash
+# Written by Zhe ZHANG at Mar 15th 2021
+# addition function of girt
+
+
+if [ $# -eq 0 ]
+then
+	echo "usage: $0 <filenames>"
+	exit 1
+fi
+
+# check if the repository is there
+if ! [ -d "./.girt" ]
+then
+	echo "girt-add: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+
+for file in $@
+do
+	if [ -e "$file" ]
+	then
+		if ! [ -e "./girt/.index/$file" ]
+		then
+			cp "$file" "./.girt/index" 
+		else
+			rm "./girt/.index/$file"
+			cp "$file" "./.girt/index" 	
+		fi
+	elif [ -e ".girt/index/$file" ]
+	then
+		rm ".girt/index/$file"
+	else
+		echo "girt-add: error: can not open '${file}'" >&2
+	fi
+
+
+
+done

@@ -1,0 +1,56 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 16th 2021
+# show function of girt
+
+
+if ! [ -d .girt ]
+then
+	echo "girt-show: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+# check the argument
+
+if ! [ $# -eq 1 ]
+then
+	echo "usage: $0 <commit>:<filename>"
+	exit 0
+else
+	cmd=`echo "$1" | egrep "[0-9]*:.+"`
+	if [ "$cmd" = "$1" ]
+	then
+		index=`echo "$1" | cut -d':' -f1`
+		if [ "$index" = "" ]
+		then
+			index=-1	# set the index -1 as default if commit index is none
+		fi
+		filename=`echo "$1" | cut -d':' -f2`
+	else
+		echo "girt-show: error: wrong argument" >&2
+	fi
+fi
+
+# show the committed file if correct
+
+# if the index is -1(default) show the file in the current index if exists
+
+if [ "$index" = -1 ]
+then
+	if [ -e ".girt/index/$filename" ]
+	then
+		cat ".girt/index/$filename"
+	else
+		echo "girt-show: error: '${filename}' not found in index" >&2
+	fi
+elif [ -e ".girt/.commit/${index}" ]
+then
+	if [ -e ".girt/.commit/${index}/${filename}" ]
+	then
+		cat ".girt/.commit/${index}/${filename}"
+	else
+		echo "girt-show: error: '${filename}' not found in commit ${index}" >&2
+	fi
+else
+	echo "girt-show: error: unknown commit '"${index}"'" >&2
+fi
+

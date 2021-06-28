@@ -1,0 +1,17 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 16th 2021
+# log function of girt
+
+if ! [ -d .girt ]
+then
+	echo "girt-log: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+if [ -e ".girt/CMTMSG" ]
+then
+	current_branch=`cat .girt/.current`
+	msg=`cat .girt/branches/$current_branch/.log | sort -nr`
+	echo "$msg"
+
+fi

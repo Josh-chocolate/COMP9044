@@ -1,0 +1,35 @@
+------------------------------------------------Subset 0 Started---------------------------------------------
+
+Date		Start		Stop		Activity	             Comments
+15/03/2021	17:50		19:00		reading, coding	        understand the requirement and do girt-init and girt-add
+16/03/2021	16:20		19:20		coding			girt-add, girt-commit, girt-log, girt-show partially finished. First 10 autotest passed.
+17/03/2021	13:00		13:30		coding debugging	add file comparing function to girt-commit, 12 autotest passed
+
+------------------------------------------------Subset 0 finished---------------------------------------------
+
+total time cost: 4h 40min
+
+------------------------------------------------Subset 1 Started----------------------------------------------
+Date		Start		Stop		Activity	             Comments
+17/03/2021	13:40		14:30		reading, coding		girt-commit -a function finished, 13,14 autotest passed
+20/03/2021	16:30		19:00		coding			girt-rm with bugs
+21/03/2021	10:30		11:00		coding, debugging	partially finished girt-rm, 15 16 autotest passed
+21/03/2021	14:00		15:30		debugging		girt-rm finished, 17 18 autotest passed
+21/03/2021	15:30		19:00		coding, debugging	girt-status partially finished, 20 autotest passed
+21/03/2021	22:40		23:00		debugging		girt-status finished, 19 22 23 autotest passed
+
+------------------------------------------------Subset 1 finished-----------------------------------------------
+
+total time cost: 9h 10min
+
+------------------------------------------------Subset 2 Started------------------------------------------------
+Date		Start		Stop		Activity	             Comments
+23/03/2021	13:50		16:00		coding, debugging	girt-branch, girt-checkout finished with bugs, 21 24 25 autotest passed
+23/03/2021	18:00		19:00		reading, debugging	fixed bugs in girt-rm, 27 autotest passed, still bugs in girt-checkout
+23/03/2021	21:10		23:00		debugging		fixed bugs in girt-checkout, first 27 and 29 autotest passed
+24/03/2021	15:50		19:30		debugging, coding	fixed bugs in girt-branch, girt-merge finished with bugs, 28 30 33 autotest passed
+25/03/2021	12:30		16:00		debugging		fixed bugs in girt-branch, girt-commit, girt-merge, all autotest passed
+
+------------------------------------------------Subset 2 finished------------------------------------------------
+
+total time cost: 12h 10min

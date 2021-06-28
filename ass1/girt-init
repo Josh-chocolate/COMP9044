@@ -1,0 +1,31 @@
+#!/bin/dash
+# Wri# WRITTEN BY ZHE ZHANG AT MAR 15th 2021
+# Initializaton function of girt
+
+
+# the shell should take exactly 0 argument
+if ! [ $# -eq 0 ]
+then
+	 echo "usage:$0"
+else
+	repo=".girt"
+	
+	# the shell should check if the repository does exist
+	if [ -e "$repo" ]
+	then
+		echo "$0: error: "$repo" already exists" >&2
+	else
+		mkdir "$repo"
+		echo "Initialized empty girt repository in $repo"
+
+		#TODO: make initial files inside the .girt directory
+		mkdir "${repo}/index"
+		mkdir "${repo}/branches"
+		mkdir "${repo}/branches/master"
+		touch "${repo}/branches/master/.log"
+		mkdir "${repo}/.commit"
+		touch "${repo}/CMTMSG"
+		touch "${repo}/.STATUS"
+		echo "master" >"${repo}/.current"
+	fi 
+fi

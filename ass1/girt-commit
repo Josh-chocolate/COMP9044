@@ -1,0 +1,118 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 16th 2021
+# commit function of girt
+
+# check the arguments
+#set -x
+while getopts :am: opts
+do
+	case $opts in
+		a)
+			for file in .girt/index/*
+			do
+				filename=`echo ${file} | cut -d'/' -f3`
+				if [ -e "${filename}" ]
+				then
+					`./girt-add "$filename"`
+				fi
+			done
+			;;
+		m) 
+			commit=$OPTARG
+			#echo "$commit"				
+			;;
+		?) 
+			echo "usage:$0 -m <commit_message>"
+			exit 1
+			;;
+	esac
+done
+
+
+# define the functions
+cp_files() {
+	# check whether the commit repository directory existence
+	current_branch=`cat .girt/.current`
+	index=$1
+	if ! [ -d ".girt/branches/${current_branch}/${index}" ]
+	then
+		mkdir ".girt/branches/${current_branch}/${index}"
+	fi
+	
+	if ! [ -d ".girt/.commit/${index}" ]
+	then
+		mkdir ".girt/.commit/${index}"
+	fi
+
+	# copy all the files from ".girt/index" to the commit repository directory
+
+	for file in `ls ".girt/index"`
+	do
+		cp ".girt/index/${file}" ".girt/branches/${current_branch}/${index}"
+		cp ".girt/index/${file}" ".girt/.commit/${index}"
+	done
+
+	
+	# once done all the actions print the successful message
+
+	echo "${index} ${commit}" >>.girt/branches/$current_branch/.log
+	echo "${index} ${commit}" >>.girt/CMTMSG
+	echo "Committed as commit ${index}"
+	exit 0
+}
+
+
+
+# check if the repository is there
+
+if ! [ -d ".girt" ]
+then
+	echo "girt-commit: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+if [ -e ".girt/CMTMSG" ]
+then
+
+	# find the next commit index from file "CMTMSG"
+
+	if [ -s ".girt/CMTMSG" ]
+	then
+		index=`cat -A ".girt/CMTMSG" | tail -n 1 | cut -d' ' -f1`
+		index=$( expr ${index} + 1)
+	else
+		index=0
+	fi
+	current_branch=`cat .girt/.current`
+
+	# check if it is needed to commit
+	latest_index=`ls .girt/branches/${current_branch} | sed 's/ /\n/g' | sort -nr | head -1`
+	#latest_index=`cat ".girt/CMTMSG" | tail -n 1 | cut -d' ' -f1`
+	index_file_list=$(ls ".girt/index")
+	repo_file_list=`ls ".girt/branches/${current_branch}/$latest_index"`
+	if ! [ "$index_file_list" = "$repo_file_list" ]
+	then
+		cp_files $index
+	else
+		for file in .girt/branches/${current_branch}/${latest_index}/*
+		do
+			#echo $file
+			filename=`echo $file | cut -d'/' -f5`
+			#echo "${filename}"
+			if [ -e ".girt/index/${filename}" ]
+			then
+				diff ".girt/branches/${current_branch}/${latest_index}/${filename}" ".girt/index/${filename}" >/dev/null
+				#echo $?
+				if [ $? -ne 0 ]
+				then
+					cp_files $index
+				fi
+			fi
+		done
+		echo "nothing to commit"
+		exit 0
+	fi
+else
+	touch ".girt/CMTMSG"
+fi
+

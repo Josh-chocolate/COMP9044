@@ -1,0 +1,189 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 20th 2021
+# remove function of girt
+
+# basic check
+#set -x
+if ! [ -d .girt ]
+then
+	echo "girt-rm: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+if [ $# -eq 0 ]
+then
+	echo "usage: girt-rm [--force] [--cached] <filenames>"
+	exit 1
+fi
+
+# define the remove function
+
+force_remove_file() {
+	filename=$2
+	cached=$1
+	if ! [ "$cached" = "true" ]
+	then
+		if [ -e $filename ]
+		then
+			rm "$filename"
+		fi
+	fi
+	if [ -e ".girt/index/$filename" ]
+	then
+		rm ".girt/index/$filename"
+	fi
+	return
+}
+
+remove_cached_file() {
+	filename=$1
+	current_branch=`cat .girt/.current`
+	diff ".girt/index/$filename" "$filename" >/dev/null 2>/dev/null
+	index_work_diff=$?
+	latest_index=`cat ".girt/CMTMSG" | tail -n 1 | cut -d' ' -f1`
+	diff ".girt/index/$filename" ".girt/branches/${current_branch}/${latest_index}/$filename" >/dev/null 2>/dev/null
+	index_repo_diff=$?
+	
+	# if the file in index is both different to the working directory and the repository then print the error message
+	if [ $index_work_diff -eq 1 -a $index_repo_diff -eq 1 ]
+	then
+		echo "girt-rm: error: '${filename}' in index is different to both to the working file and the repository" >&2
+		exit 1
+	else
+		rm ".girt/index/$filename"
+	fi
+}
+
+remove_file() {
+	filename="$1"
+
+	# check if the file is in working directory
+	if ! [ -e "$filename" ]
+	then
+		rm ".girt/index/$filename"
+		return
+	fi
+
+	current_branch=`cat .girt/.current`
+	diff ".girt/index/$filename" "$filename" >/dev/null 2>/dev/null
+	index_work_diff=$?
+	latest_index=`cat ".girt/CMTMSG" | tail -n 1 | cut -d' ' -f1`
+	diff ".girt/index/$filename" ".girt/branches/${current_branch}/${latest_index}/$filename" >/dev/null 2>/dev/null
+	index_repo_diff=$?
+
+
+	# work != index != repo
+	if [ $index_work_diff -ne 0 ]
+	then
+		if [ $index_repo_diff -ne 0 ]
+		then
+			echo "girt-rm: error: '${filename}' in index is different to both to the working file and the repository" >&2
+			exit 1 
+		fi
+	fi
+
+	# work = index != repo
+	if [ $index_work_diff -eq 0 ]
+	then
+		if [ $index_repo_diff -ne 0 ]
+		then
+			echo "girt-rm: error: '${filename}' has staged changes in the index" >&2
+			exit 1
+		fi
+	fi
+
+	# work != index = repo
+	if [ $index_work_diff -ne 0 ]
+	then
+		if [ $index_repo_diff -eq 0 ]
+		then
+			echo "girt-rm: error: '${filename}' in the repository is different to the working file" >&2
+			exit 1
+		fi
+	fi
+
+	# work = index = repo
+	if [ $index_work_diff -eq 0 ]
+	then
+		if [ $index_repo_diff -eq 0 ]
+		then
+			rm "$filename" ".girt/index/$filename"
+			return
+		fi
+	fi
+}
+
+
+
+
+
+# main function loop
+
+for filename in "$@"
+do
+	if [ "$filename" = "--force" ]
+	then
+		continue
+	fi
+	
+	if [ "$filename" = "--cached" ]
+	then
+		continue
+	fi
+	
+	# check if the file exists
+	if ! [ -e ".girt/index/$filename" ]
+	then
+		echo "girt-rm: error: '${filename}' is not in the girt repository" >&2
+		exit 1
+	fi
+done
+
+while true
+do
+	case $1 in
+		--force)
+			#echo "--force"
+			force=true
+			shift
+			;;
+		--cached)
+			#echo "--cached"
+			cached=true
+			shift
+			;;
+		*)
+			filename="$1"
+			# force remove files
+			if [ "$force" = true ]
+			then
+				force_remove_file "$cached" "$filename"
+				if [ $# -eq 1 ]
+				then
+					break
+				fi
+				shift
+				continue
+			fi
+
+			# remove cached files or both cached and working files
+			if [ "$cached" = true ]
+			then
+				remove_cached_file "$filename"
+			else
+				remove_file "$filename"
+			fi
+			#echo "${filename} removed"
+			if [ $# -eq 1 ]
+			then
+				break
+			fi
+			shift
+			;;
+	esac
+done
+
+
+
+
+

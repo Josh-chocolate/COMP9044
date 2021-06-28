@@ -1,0 +1,140 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 23th
+# checkout function of girt
+
+# the main procedure
+
+# check if the repository is there
+if ! [ -d "./.girt" ]
+then
+	echo "girt-checkout: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+
+# the usage check
+if [ $# -ne 1 ]
+then
+	echo "usage: girt-checkout <branch>"
+	exit 1
+else
+	branch=$1
+fi
+
+
+# check if the branch exist
+if ! [ -d .girt/branches/$branch ]
+then
+	echo "girt-checkout: error: unknown branch '${branch}'" >&2
+	exit 1
+else
+	# check if already on that branch
+	current_branch=`cat .girt/.current`
+	if [ "$branch" = "$current_branch" ]
+	then
+		echo "Already on '${branch}'"
+		exit 1
+	fi
+fi
+
+
+# check if the current branch is the same as the switch branch
+# if they are the same, then do nothing
+current_branch=`cat .girt/.current`
+latest_current_commit=`ls .girt/branches/${current_branch} | sed 's/ /\n/g' | sort -nr | head -1`
+latest_now_commit=`ls .girt/branches/${branch} | sed 's/ /\n/g' | sort -nr | head -1`
+
+if [ "$latest_current_commit" = "$latest_now_commit" ]
+then
+	same=true
+else
+	same=false
+fi
+if [ "$same" = true ]
+then
+	echo "Switched to branch '${branch}'"
+	echo $branch >.girt/.current
+	exit 0
+fi
+
+# if they are not all the same, check the files in the working directory.
+current_dir=.girt/branches/${current_branch}/${latest_current_commit}
+switch_dir=.girt/branches/${branch}/${latest_now_commit}
+unsaved_files=""
+
+for file in *
+do
+	if [ -e "${current_dir}/$file" ]
+	then
+		diff $file "${current_dir}/$file" >/dev/null
+		if [ $? -gt 0 ]
+		then
+			echo $file
+			if [ -e "${switch_dir}/$file" ]
+			then
+				diff $file "${switch_dir}/$file" >/dev/null
+				if [ $? -gt 0 ]
+				then
+					unsaved_files="${unsaved_files}\n$file"
+				fi
+			fi
+		fi
+	else
+		if [ -e "${switch_dir}/$file" ]
+		then
+			unsaved_files="${unsaved_files}\n$file"
+		fi
+	fi
+done
+
+if ! [ "$unsaved_files" = "" ]
+then
+	echo "girt-checkout: error: Your changes to the following files would be overwritten by checkout:$unsaved_files" >&2
+	exit 1
+fi
+
+
+# record the current branch
+echo $branch >.girt/.current
+
+
+# remove all the files in the working directory
+./girt-status >/dev/null
+
+for file in `cat .girt/.STATUS | grep -v "untracked" | cut -d' ' -f1`
+do
+	if [ -e "$file" ]
+	then
+		rm $file
+	fi
+done
+
+
+# copy all the files to the working directory
+latest_commit=`ls .girt/branches/${branch} | sed 's/ /\n/g' | sort -nr | head -1`
+
+if ! [ "`ls .girt/branches/${branch}/${latest_commit}`" = '' ]
+then
+	for file in .girt/branches/${branch}/${latest_commit}/*
+	do
+		cp $file ./
+	done
+fi
+
+# update the index
+for file in .girt/index/*
+do
+	file=`echo $file | cut -d'/' -f3`
+	if [ "$file" = "*" ]
+	then
+		continue
+	fi
+	
+	if [ -e "$file" ]
+	then
+		rm .girt/index/$file
+		cp $file .girt/index
+	fi
+done
+
+echo "Switched to branch '${branch}'"

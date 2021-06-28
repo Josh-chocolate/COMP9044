@@ -1,0 +1,17 @@
+------------------------------------------------Subset 0 Started-------------------------------------------------------------------------
+
+Date		Start		Stop		Activity	             Comments
+12/04/2021	14:40		16:40		reading, coding		Basic functions done. First 13 autotest passed, while autotest system break.
+12/04/2021	18:40		19:04		debugging		Bugs of input fixed. First 15 autotest passed.
+
+------------------------------------------------Subset 0 finished-------------------------------------------------------------------------
+
+------------------------------------------------Subset 1 Started-------------------------------------------------------------------------
+
+Date		Start		Stop		Activity	             Comments
+16/04/2021	15:30		18:00		reading, coding		Rewrite most of the codes to apply the functions in Subset1. First 19 autotest passed.
+17/04/2021	17:40		18:00		coding			Add the function of parse command. First 20 autotest passed.
+22/04/2021	14:00		14:30		coding, debugging	Rewrite partially finished.
+23/04/2021	15:00		18:40		coding, debugging	Rewrite finished.
+23/04/2021	22:30		23:15		debugging		Bugs partially fixed. 75 autotest passed.
+24/04/2021	12:30		13:30		debugging		Bugs fixed. 80 autotest passed.

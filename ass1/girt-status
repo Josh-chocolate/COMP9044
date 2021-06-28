@@ -1,0 +1,142 @@
+#!/bin/dash
+# WRITTEN BY ZHE ZHANG AT MAR 21th 2021
+# status function of girt
+#set -x
+
+if ! [ -e .girt ]
+then
+	echo "girt-status: error: girt repository directory .girt not found" >&2
+	exit 1
+fi
+
+# define functions
+check_display() {
+	filename=`echo $1 | cut -d'/' -f 3`
+	tmp=`cat .girt/.STATUS | egrep "^$filename "`
+	if [ -n "$tmp" ]
+	then
+		return 0
+	else
+		return 1
+	fi
+}
+
+rm .girt/.STATUS
+touch .girt/.STATUS
+current_branch=`cat .girt/.current`
+
+for file in *
+do
+	# file in working diary but not in index
+	if ! [ -e ".girt/index/$file" ]
+	then
+		echo "${file} - untracked" >>.girt/.STATUS
+		continue
+	fi
+	
+	
+	latest_index=`ls .girt/branches/${current_branch} | sed 's/ /\n/g' | sort -nr | head -1`
+	diff "$file" ".girt/branches/${current_branch}/${latest_index}/$file" 
+	work_repo_diff=$?
+	
+	if [ $work_repo_diff -eq 0 ]
+	then
+		echo  "${file} - same as repo" >>.girt/.STATUS
+		continue
+	fi
+
+	# file not in repo
+	
+	if ! [ -e .girt/branches/${current_branch}/"$latest_index"/"$file" ]
+	then
+		diff "$file" ".girt/index/$file" >/dev/null 2>/dev/null
+		if [ $? -eq 0 ]
+		then
+			# work = index not repo
+			echo "${file} - added to index" >>.girt/.STATUS
+			continue
+		else
+			# work != index not repo
+			echo "${file} - added to index, file changed" >>.girt/.STATUS
+			continue
+		fi
+	fi
+	
+done
+
+for file in .girt/index/*
+do
+	# if the status has been displayed then continue
+	check_display $file
+	if [ $? -eq 0 ]
+	then
+		continue
+	fi
+	
+	file=`echo $file | cut -d'/' -f3`
+	# file in index not in work and repo
+	if ! [ -e .girt/branches/${current_branch}/"$latest_index"/"$file" ]
+	then
+		if ! [ -e $file ]
+		then
+			echo "${file} - added to index, file deleted" >>.girt/.STATUS
+			continue
+		fi
+	fi
+	
+	# file in index and repo not in work
+	if ! [ -e $file ]
+	then
+		echo "${file} - file deleted" >>.girt/.STATUS
+		continue
+	fi
+	
+	diff ".girt/index/$file" "$file" >/dev/null 2>/dev/null
+	index_work_diff=$?
+	diff ".girt/index/$file" ".girt/branches/${current_branch}/${latest_index}/$file" >/dev/null 2>/dev/null
+	index_repo_diff=$?
+	
+	if [ $index_work_diff -ne 0 ]
+	then
+		if [ $index_repo_diff -ne 0 ]
+		then
+			# work != index != repo
+			echo "${file} - file changed, different changes staged for commit" >>.girt/.STATUS
+		else
+			# work != index = repo
+			echo "${file} - file changed, changes not staged for commit" >>.girt/.STATUS
+		fi
+	else
+		if [ $index_repo_diff -ne 0 ]
+		then
+			# work = index != repo
+			echo "${file} - file changed, changes staged for commit" >>.girt/.STATUS
+		else
+			# work = index = repo
+			echo "${file} - same as repo" >>.girt/.STATUS
+		fi
+	fi
+
+	
+	
+	
+done
+
+latest_index=`cat ".girt/CMTMSG" | tail -n 1 | cut -d' ' -f1`
+# not work not index but repo
+for file in .girt/branches/${current_branch}/"$latest_index"/*
+do
+	file=`echo $file | cut -d'/' -f5`
+	if [ "$file" = "*" ]
+	then
+		continue
+	elif ! [ -e "$file" ]
+	then
+		if ! [ -e ".girt/index/$file" ]
+		then
+			echo "${file} - deleted" >>.girt/.STATUS
+		fi
+	fi
+done
+
+cat .girt/.STATUS | egrep -v '\*' | sort
